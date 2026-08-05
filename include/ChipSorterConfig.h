@@ -2,9 +2,29 @@
 
 #include <Arduino.h>
 
+#ifndef CHIP_SORTER_BAUD
+#define CHIP_SORTER_BAUD 115200
+#endif
+
+#ifndef CHIP_SORTER_LINK_SERIAL_MODE
+#define CHIP_SORTER_LINK_SERIAL_MODE 0
+#endif
+
+#ifndef CHIP_SORTER_LINK_BAUD
+#if CHIP_SORTER_LINK_SERIAL_MODE == 1
+#define CHIP_SORTER_LINK_BAUD 19200
+#else
+#define CHIP_SORTER_LINK_BAUD CHIP_SORTER_BAUD
+#endif
+#endif
+
 namespace chip_sorter {
 
-constexpr uint32_t kSerialBaud = CHIP_SORTER_BAUD;
+constexpr uint32_t kUsbSerialBaud = CHIP_SORTER_BAUD;
+constexpr uint32_t kLinkSerialBaud = CHIP_SORTER_LINK_BAUD;
+
+constexpr uint8_t kLinkSoftwareRxPin = 12;
+constexpr uint8_t kLinkSoftwareTxPin = 13;
 
 constexpr uint8_t kStepperEnablePin = 8;
 
