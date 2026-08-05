@@ -70,13 +70,19 @@ void MotionController::update() {
       zStepper_.run();
       break;
     case Action::Homing:
+      Serial.println(F("HOMING"));
       updateHome();
       break;
     case Action::MoveTube:
+      Serial.println(F("MOVING TUBE"));
       updateMoveTube();
       break;
     case Action::PushOut:
+      Serial.println(F("PUSHING OUT - TBD"));
+      updatePush();
+      break;
     case Action::PushReturn:
+      Serial.println(F("PUSHING RETURN - TBD"));    
       updatePush();
       break;
   }
@@ -104,18 +110,25 @@ void MotionController::runTestLoop() {
   static TestState state = TestState::XForward;
   static bool motionIssued = false;
 
+  // Test loop mode bypasses update(), so poll limit-switch transitions here.
+  updateLimitSwitchStateEvents();
+
   if (!motionIssued) {
     switch (state) {
       case TestState::XForward:
+        Serial.println(F("TEST: X FORWARD"));
         setMotionTarget(xStepper_, chip_sorter::kTestRotationSteps);
         break;
       case TestState::YForward:
+        Serial.println(F("TEST: Y FORWARD"));
         setMotionTarget(yStepper_, chip_sorter::kTestRotationSteps);
         break;
       case TestState::YBackward:
+        Serial.println(F("TEST: Y BACKWARD"));
         setMotionTarget(yStepper_, -chip_sorter::kTestRotationSteps);
         break;
       case TestState::XBackward:
+        Serial.println(F("TEST: X BACKWARD"));  
         setMotionTarget(xStepper_, -chip_sorter::kTestRotationSteps);
         break;
     }

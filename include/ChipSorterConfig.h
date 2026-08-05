@@ -20,6 +20,14 @@
 
 namespace chip_sorter {
 
+constexpr uint8_t stepperStepsPerRevolution = 200;
+constexpr uint8_t stepperMicrosteps = 16;
+constexpr uint8_t pinionTeeth = 10;
+constexpr uint8_t gearTeeth = 210;
+constexpr unit8_t pusherTeeth = 10;
+constexpr unit8_t pusherTravel = 44;
+constexpr unit8_t pullerTravel = 20;
+
 constexpr uint32_t kUsbSerialBaud = CHIP_SORTER_BAUD;
 constexpr uint32_t kLinkSerialBaud = CHIP_SORTER_LINK_BAUD;
 
@@ -41,14 +49,14 @@ constexpr uint8_t kZDirPin = 7;
 constexpr uint8_t kZLimitPin = 11;
 
 constexpr uint8_t kTubeCount = 10;
-constexpr long kTableStepsPerTube = 800;
+constexpr long kTableStepsPerTube = stepperStepsPerRevolution * stepperMicrosteps * gearTeeth / pinionTeeth / kTubeCount;
 constexpr long kTestRotationSteps = kTableStepsPerTube;
 
 constexpr long kHomeSeekSpeed = 300;
 constexpr long kHomeBackoffSteps = 80;
 
 constexpr long kMaxMotionSpeed = 1200;
-constexpr float kMotionAcceleration = 900.0f;
+constexpr float kMotionAcceleration = 2000.0f;
 
 constexpr long kPusherStrokeSteps = 250;
 
