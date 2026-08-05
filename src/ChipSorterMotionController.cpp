@@ -18,7 +18,10 @@ MotionController::MotionController(Stream& serial)
       action_(Action::Idle),
       homingAxis_(0),
       targetTube_(0),
-      homed_(false) {}
+  homed_(false),
+  xLimitState_(false),
+  yLimitState_(false),
+  zLimitState_(false) {}
 
 void MotionController::begin() {
   pinMode(chip_sorter::kStepperEnablePin, OUTPUT);
@@ -51,9 +54,15 @@ void MotionController::begin() {
   xStepper_.enableOutputs();
   yStepper_.enableOutputs();
   zStepper_.enableOutputs();
+
+  xLimitState_ = isLimitTriggered(chip_sorter::kXLimitPin);
+  yLimitState_ = isLimitTriggered(chip_sorter::kYLimitPin);
+  zLimitState_ = isLimitTriggered(chip_sorter::kZLimitPin);
 }
 
 void MotionController::update() {
+  updateLimitSwitchStateEvents();
+
   switch (action_) {
     case Action::Idle:
       xStepper_.run();
@@ -264,6 +273,13 @@ void MotionController::sendStatus() const {
   serial_.println(action_ == Action::Idle ? 0 : 1);
 }
 
+void MotionController::sendLimitState(const char* axis, bool triggered) {
+  serial_.print(F("LIMIT "));
+  serial_.print(axis);
+  serial_.print(' ');
+  serial_.println(triggered ? 1 : 0);
+}
+
 void MotionController::updateHome() {
   if (homingAxis_ >= 3) {
     action_ = Action::Idle;
@@ -336,6 +352,27 @@ bool MotionController::anyStepperBusy() {
 
 void MotionController::setMotionTarget(AccelStepper& stepper, long steps) {
   stepper.move(steps);
+}
+
+void MotionController::updateLimitSwitchStateEvents() {
+  const bool xNow = isLimitTriggered(chip_sorter::kXLimitPin);
+  const bool yNow = isLimitTriggered(chip_sorter::kYLimitPin);
+  const bool zNow = isLimitTriggered(chip_sorter::kZLimitPin);
+
+  if (xNow != xLimitState_) {
+    xLimitState_ = xNow;
+    sendLimitState("X", xNow);
+  }
+
+  if (yNow != yLimitState_) {
+    yLimitState_ = yNow;
+    sendLimitState("Y", yNow);
+  }
+
+  if (zNow != zLimitState_) {
+    zLimitState_ = zNow;
+    sendLimitState("Z", zNow);
+  }
 }
 
 AccelStepper& MotionController::stepperForAxis(uint8_t axis) {

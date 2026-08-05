@@ -148,6 +148,15 @@ Expected responses:
 - `STATUS <homed> <current_tube> <busy>` for state reporting
 - `ERR <reason>` for invalid requests or busy conditions
 
+Additional asynchronous event messages:
+
+- `LIMIT X 1` when X limit becomes active
+- `LIMIT X 0` when X limit becomes inactive
+- `LIMIT Y 1` when Y limit becomes active
+- `LIMIT Y 0` when Y limit becomes inactive
+- `LIMIT Z 1` when Z limit becomes active
+- `LIMIT Z 0` when Z limit becomes inactive
+
 The protocol is described in [docs/stepper_project_handoff.md](docs/stepper_project_handoff.md).
 
 ## Build

@@ -37,6 +37,9 @@ class MotionController {
   uint8_t homingAxis_;
   uint8_t targetTube_;
   bool homed_;
+  bool xLimitState_;
+  bool yLimitState_;
+  bool zLimitState_;
 
   void dispatchCommand(char* mutableLine);
   void startHome();
@@ -47,10 +50,12 @@ class MotionController {
   void sendDone(const char* command);
   void sendError(const char* reason);
   void sendStatus() const;
+  void sendLimitState(const char* axis, bool triggered);
 
   void updateHome();
   void updateMoveTube();
   void updatePush();
+  void updateLimitSwitchStateEvents();
 
   bool isLimitTriggered(uint8_t pin) const;
   bool anyStepperBusy();
