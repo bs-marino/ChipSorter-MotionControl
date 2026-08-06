@@ -17,7 +17,7 @@ class MotionController {
   void begin();
   void update();
   void handleLine(const char* line);
-  void runTestLoop();
+  bool isBusy();
 
  private:
   enum class Action : uint8_t {
@@ -26,6 +26,8 @@ class MotionController {
     MoveTube,
     PushOut,
     PushReturn,
+    PullOut,
+    PullReturn,
   };
 
   Stream& serial_;
@@ -35,7 +37,10 @@ class MotionController {
 
   Action action_;
   uint8_t homingAxis_;
+  uint8_t currentTube_;
   uint8_t targetTube_;
+  int8_t lastMoveDeltaTubes_;
+  long lastMoveDeltaSteps_;
   bool homed_;
   bool xLimitState_;
   bool yLimitState_;
@@ -45,8 +50,10 @@ class MotionController {
   void startHome();
   void startMoveTube(uint8_t tubeIndex);
   void startPush();
+  void startPull();
   void stopMotion();
   void sendOk(const char* command);
+  void sendOkMoveTube(uint8_t fromTube, uint8_t toTube, int8_t deltaTubes, long deltaSteps);
   void sendDone(const char* command);
   void sendError(const char* reason);
   void sendStatus() const;
@@ -59,7 +66,7 @@ class MotionController {
 
   bool isLimitTriggered(uint8_t pin) const;
   bool anyStepperBusy();
-  void setMotionTarget(AccelStepper& stepper, long steps);
+  void normalizeTablePosition();
   AccelStepper& stepperForAxis(uint8_t axis);
   const AxisConfig& axisConfig(uint8_t axis) const;
 };

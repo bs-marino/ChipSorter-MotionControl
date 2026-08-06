@@ -21,12 +21,13 @@
 namespace chip_sorter {
 
 constexpr uint8_t stepperStepsPerRevolution = 200;
-constexpr uint8_t stepperMicrosteps = 16;
+constexpr uint8_t stepperMicrosteps = 1;
 constexpr uint8_t pinionTeeth = 10;
 constexpr uint8_t gearTeeth = 210;
-constexpr unit8_t pusherTeeth = 10;
-constexpr unit8_t pusherTravel = 44;
-constexpr unit8_t pullerTravel = 20;
+constexpr uint8_t pusherTeeth = 10;
+constexpr uint8_t pullerTeeth = 10;
+constexpr uint16_t pusherTravel = 44;
+constexpr uint16_t pullerTravel = 20;
 
 constexpr uint32_t kUsbSerialBaud = CHIP_SORTER_BAUD;
 constexpr uint32_t kLinkSerialBaud = CHIP_SORTER_LINK_BAUD;
@@ -49,7 +50,10 @@ constexpr uint8_t kZDirPin = 7;
 constexpr uint8_t kZLimitPin = 11;
 
 constexpr uint8_t kTubeCount = 10;
-constexpr long kTableStepsPerTube = stepperStepsPerRevolution * stepperMicrosteps * gearTeeth / pinionTeeth / kTubeCount;
+constexpr long kTableStepsPerTube = (static_cast<long>(stepperStepsPerRevolution) *
+									 static_cast<long>(stepperMicrosteps) *
+									 static_cast<long>(gearTeeth)) /
+									static_cast<long>(pinionTeeth) / static_cast<long>(kTubeCount);
 constexpr long kTestRotationSteps = kTableStepsPerTube;
 
 constexpr long kHomeSeekSpeed = 300;
@@ -58,7 +62,8 @@ constexpr long kHomeBackoffSteps = 80;
 constexpr long kMaxMotionSpeed = 1200;
 constexpr float kMotionAcceleration = 2000.0f;
 
-constexpr long kPusherStrokeSteps = 250;
+constexpr long kPusherStrokeSteps = (static_cast<long>(pusherTravel) * static_cast<long>(stepperStepsPerRevolution) * static_cast<long>(stepperMicrosteps) / pusherTeeth);  
+constexpr long kPullerStrokeSteps = (static_cast<long>(pullerTravel) * static_cast<long>(stepperStepsPerRevolution) * static_cast<long>(stepperMicrosteps) / pullerTeeth);
 
 constexpr bool kLimitSwitchActiveLow = true;
 constexpr int8_t kXHomeDirection = -1;
