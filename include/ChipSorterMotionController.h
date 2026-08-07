@@ -41,6 +41,7 @@ class MotionController {
   uint8_t targetTube_;
   int8_t lastMoveDeltaTubes_;
   long lastMoveDeltaSteps_;
+  unsigned long lastLimitPollUs_;
   bool homed_;
   bool xLimitState_;
   bool yLimitState_;
@@ -66,6 +67,8 @@ class MotionController {
 
   bool isLimitTriggered(uint8_t pin) const;
   bool anyStepperBusy();
+  void runSteppersBurst();
+  void pollLimitsIfDue();
   void normalizeTablePosition();
   AccelStepper& stepperForAxis(uint8_t axis);
   const AxisConfig& axisConfig(uint8_t axis) const;

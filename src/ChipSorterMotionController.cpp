@@ -14,15 +14,16 @@ constexpr long kFullTableRotationSteps = chip_sorter::kTableStepsPerTube * chip_
 
 MotionController::MotionController(Stream& serial)
     : serial_(serial),
-      xStepper_(AccelStepper::DRIVER, chip_sorter::kXStepPin, chip_sorter::kXDirPin),
-      yStepper_(AccelStepper::DRIVER, chip_sorter::kYStepPin, chip_sorter::kYDirPin),
-      zStepper_(AccelStepper::DRIVER, chip_sorter::kZStepPin, chip_sorter::kZDirPin),
+    xStepper_(AccelStepper::DRIVER, chip_sorter::kXStepPin, chip_sorter::kXDirPin),
+    yStepper_(AccelStepper::DRIVER, chip_sorter::kYStepPin, chip_sorter::kYDirPin),
+    zStepper_(AccelStepper::DRIVER, chip_sorter::kZStepPin, chip_sorter::kZDirPin),
       action_(Action::Idle),
       homingAxis_(0),
       currentTube_(0),
       targetTube_(0),
       lastMoveDeltaTubes_(0),
       lastMoveDeltaSteps_(0),
+      lastLimitPollUs_(0),
       homed_(true),
       xLimitState_(false),
       yLimitState_(false),
@@ -52,9 +53,9 @@ void MotionController::begin() {
   yStepper_.setAcceleration(chip_sorter::kMotionAcceleration);
   zStepper_.setAcceleration(chip_sorter::kMotionAcceleration);
 
-  xStepper_.setMinPulseWidth(3);
-  yStepper_.setMinPulseWidth(3);
-  zStepper_.setMinPulseWidth(3);
+  xStepper_.setMinPulseWidth(5);
+  yStepper_.setMinPulseWidth(5);
+  zStepper_.setMinPulseWidth(5);
 
   xStepper_.enableOutputs();
   yStepper_.enableOutputs();
@@ -72,13 +73,11 @@ void MotionController::begin() {
 }
 
 void MotionController::update() {
-  updateLimitSwitchStateEvents();
+  pollLimitsIfDue();
 
   switch (action_) {
     case Action::Idle:
-      xStepper_.run();
-      yStepper_.run();
-      zStepper_.run();
+      runSteppersBurst();
       break;
     case Action::Homing:
       updateHome();
@@ -192,9 +191,13 @@ void MotionController::dispatchCommand(char* mutableLine) {
 }
 
 void MotionController::startHome() {
-  homed_ = false;
-  action_ = Action::Homing;
-  homingAxis_ = 0;
+  // Homing sequence to be reworked once limits/mechanics are finalized.
+  homed_ = true;
+  currentTube_ = 0;
+  targetTube_ = 0;
+  xStepper_.setCurrentPosition(0);
+  action_ = Action::Idle;
+  sendDone("HOME");
 }
 
 void MotionController::startMoveTube(uint8_t tubeIndex) {
@@ -296,43 +299,11 @@ void MotionController::sendLimitState(const char* axis, bool triggered) {
 }
 
 void MotionController::updateHome() {
-  if (homingAxis_ >= 3) {
-    action_ = Action::Idle;
-    homed_ = true;
-    targetTube_ = 0;
-    xStepper_.setCurrentPosition(0);
-    yStepper_.setCurrentPosition(0);
-    zStepper_.setCurrentPosition(0);
-    sendDone("HOME");
-    return;
-  }
-
-  const AxisConfig& axis = axisConfig(homingAxis_);
-  AccelStepper& stepper = stepperForAxis(homingAxis_);
-
-  if (stepper.distanceToGo() == 0) {
-    if (!isLimitTriggered(axis.limitPin)) {
-      stepper.setSpeed(static_cast<float>(chip_sorter::kHomeSeekSpeed * axis.homeDirection));
-      stepper.runSpeed();
-      return;
-    }
-
-    stepper.stop();
-    stepper.setCurrentPosition(0);
-    stepper.move(-chip_sorter::kHomeBackoffSteps * axis.homeDirection);
-  }
-
-  stepper.run();
-  if (stepper.distanceToGo() == 0) {
-    stepper.setCurrentPosition(0);
-    homingAxis_++;
-  }
+  action_ = Action::Idle;
 }
 
 void MotionController::updateMoveTube() {
-  xStepper_.run();
-  yStepper_.run();
-  zStepper_.run();
+  runSteppersBurst();
 
   if (!anyStepperBusy()) {
     currentTube_ = targetTube_;
@@ -343,9 +314,7 @@ void MotionController::updateMoveTube() {
 }
 
 void MotionController::updatePush() {
-  xStepper_.run();
-  yStepper_.run();
-  zStepper_.run();
+  runSteppersBurst();
 
   if (action_ == Action::PushOut && yStepper_.distanceToGo() == 0) {
     yStepper_.move(-chip_sorter::kPusherStrokeSteps);
@@ -377,6 +346,29 @@ bool MotionController::isLimitTriggered(uint8_t pin) const {
 
 bool MotionController::anyStepperBusy() {
   return xStepper_.distanceToGo() != 0 || yStepper_.distanceToGo() != 0 || zStepper_.distanceToGo() != 0;
+}
+
+void MotionController::runSteppersBurst() {
+  for (uint8_t i = 0; i < chip_sorter::kStepperRunBurstCount; ++i) {
+    const bool stepped = xStepper_.run() || yStepper_.run() || zStepper_.run();
+    if (!stepped) {
+      break;
+    }
+  }
+}
+
+void MotionController::pollLimitsIfDue() {
+  // Avoid extra GPIO/serial overhead during active motion.
+  if (action_ == Action::MoveTube || action_ == Action::PushOut || action_ == Action::PushReturn ||
+      action_ == Action::PullOut || action_ == Action::PullReturn) {
+    return;
+  }
+
+  const unsigned long nowUs = micros();
+  if (lastLimitPollUs_ == 0 || (nowUs - lastLimitPollUs_) >= chip_sorter::kLimitPollIntervalUs) {
+    lastLimitPollUs_ = nowUs;
+    updateLimitSwitchStateEvents();
+  }
 }
 
 void MotionController::normalizeTablePosition() {

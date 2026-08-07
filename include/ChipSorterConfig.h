@@ -21,13 +21,14 @@
 namespace chip_sorter {
 
 constexpr uint8_t stepperStepsPerRevolution = 200;
-constexpr uint8_t stepperMicrosteps = 1;
+// Torque-first baseline for reliable indexing.
+constexpr uint8_t stepperMicrosteps = 4;
 constexpr uint8_t pinionTeeth = 10;
 constexpr uint8_t gearTeeth = 210;
 constexpr uint8_t pusherTeeth = 10;
 constexpr uint8_t pullerTeeth = 10;
-constexpr uint16_t pusherTravel = 44;
-constexpr uint16_t pullerTravel = 20;
+constexpr uint16_t pusherTravel = 5; //44
+constexpr uint16_t pullerTravel = 5; //20
 
 constexpr uint32_t kUsbSerialBaud = CHIP_SORTER_BAUD;
 constexpr uint32_t kLinkSerialBaud = CHIP_SORTER_LINK_BAUD;
@@ -56,11 +57,17 @@ constexpr long kTableStepsPerTube = (static_cast<long>(stepperStepsPerRevolution
 									static_cast<long>(pinionTeeth) / static_cast<long>(kTubeCount);
 constexpr long kTestRotationSteps = kTableStepsPerTube;
 
-constexpr long kHomeSeekSpeed = 300;
+constexpr long kHomeSeekSpeed = 120;
 constexpr long kHomeBackoffSteps = 80;
 
-constexpr long kMaxMotionSpeed = 1200;
-constexpr float kMotionAcceleration = 2000.0f;
+constexpr long kMaxMotionSpeed = 3000;
+constexpr float kMotionAcceleration = 5000.0f;
+
+// Conservative scheduler defaults for smooth motion on Uno.
+// If needed, raise kStepperRunBurstCount gradually (2, 3, ...) while testing.
+constexpr uint8_t kStepperRunBurstCount = 1;
+// Poll limits at a moderate rate to reduce runtime overhead.
+constexpr unsigned long kLimitPollIntervalUs = 5000;
 
 constexpr long kPusherStrokeSteps = (static_cast<long>(pusherTravel) * static_cast<long>(stepperStepsPerRevolution) * static_cast<long>(stepperMicrosteps) / pusherTeeth);  
 constexpr long kPullerStrokeSteps = (static_cast<long>(pullerTravel) * static_cast<long>(stepperStepsPerRevolution) * static_cast<long>(stepperMicrosteps) / pullerTeeth);
