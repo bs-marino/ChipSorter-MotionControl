@@ -24,13 +24,13 @@ size_t serialLineLength = 0;
 
 #if CHIP_SORTER_TEST_LOOP
 const char* kSimulatedCommands[] = {
-  "MOVE_TUBE 3",
+  "MOVE 3",
   "PUSH",
-  "MOVE_TUBE 7",
+  "MOVE 7",
   "PUSH",
-  "MOVE_TUBE 8",
+  "MOVE 8",
   "PUSH",
-  "MOVE_TUBE 4",
+  "MOVE 4",
   "PUSH",
 };
 constexpr size_t kSimulatedCommandCount = sizeof(kSimulatedCommands) / sizeof(kSimulatedCommands[0]);
